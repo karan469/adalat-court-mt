@@ -1,0 +1,115 @@
+# Tokenizer roster for the Task-1 study.
+#
+# Chosen to span the three vocabulary designs a deployment realistically picks
+# between, so the Devanagari penalty can be attributed to a design choice rather
+# than to one bad model:
+#
+#   byte-level BPE, English-centric  -> tiktoken cl100k/o200k, BLOOMZ
+#   multilingual SentencePiece       -> mBART-50, mT5
+#   Indic-specialised                -> IndicBART, indic-bert, MuRIL, Sarvam-1
+#
+# `skip: true` entries are documented rather than deleted: knowing *why* a
+# candidate named in the brief is absent is part of the analysis.
+
+tokenizers:
+  - key: gpt4-cl100k
+    spec: tiktoken:cl100k_base
+    label: "GPT-4 / cl100k_base"
+    family: byte-bpe
+    note: "English-centric byte BPE; Devanagari has almost no dedicated merges."
+
+  - key: gpt4o-o200k
+    spec: tiktoken:o200k_base
+    label: "GPT-4o / o200k_base"
+    family: byte-bpe
+    note: "Doubled vocab with explicit multilingual coverage; the fair frontier baseline."
+
+  - key: bloomz-560m
+    spec: hf:bigscience/bloomz-560m
+    label: "BLOOMZ (250k BPE)"
+    family: byte-bpe
+    note: "Hindi in pretraining mix; candidate base model named in the brief."
+
+  - key: mbart-50
+    spec: hf:facebook/mbart-large-50
+    label: "mBART-50 (250k SP)"
+    family: sentencepiece
+    note: "Seq2seq MT baseline; encoder hard-capped at 1024 positions."
+    extra:
+      kwargs:
+        use_fast: false
+
+  - key: mt5-base
+    spec: hf:google/mt5-base
+    label: "mT5 (250k SP)"
+    family: sentencepiece
+    note: >-
+      101-language SentencePiece unigram. Pinned to the slow tokenizer: the fast
+      conversion drops byte fallback and would report spurious <unk>.
+    extra:
+      kwargs:
+        use_fast: false
+
+  - key: indicbart
+    spec: hf:ai4bharat/IndicBART
+    label: "IndicBART (64k SP)"
+    family: indic-sentencepiece
+    note: "11 Indic languages, script-unified to Devanagari; small vocab by design."
+    extra:
+      kwargs:
+        use_fast: false
+        do_lower_case: false
+        keep_accents: true
+
+  - key: indic-bert
+    spec: hf:ai4bharat/indic-bert
+    skip: true
+    label: "IndicBERT (200k SP)"
+    family: indic-sentencepiece
+    note: >-
+      ALBERT-style SentencePiece over 12 Indian languages. The repo became
+      access-restricted (401 without an approved token), so MuRIL stands in as
+      the Indic WordPiece reference point.
+    extra:
+      kwargs:
+        use_fast: false
+        keep_accents: true
+
+  - key: muril
+    spec: hf:google/muril-base-cased
+    label: "MuRIL (197k WP)"
+    family: wordpiece
+    note: "Google's Indian-language BERT; WordPiece with transliterated pairs."
+
+  - key: sarvam-1
+    spec: hf:sarvamai/sarvam-1
+    label: "Sarvam-1 (68k)"
+    family: indic-optimised
+    note: "Explicitly optimised for Indic fertility; the strongest published reference point."
+
+  # --- Named in the brief but not usable here -------------------------------
+  - key: sutra
+    spec: hf:two-ai/sutra-v2
+    skip: true
+    label: "SUTRA"
+    family: proprietary
+    note: >-
+      TWO AI's SUTRA is API-only; no tokenizer artefact is published, so its
+      claimed ~4x Indic token reduction cannot be reproduced. Treated as a
+      target to beat rather than a measured row.
+
+  - key: indictrans2
+    spec: hf:ai4bharat/indictrans2-en-indic-dist-200M
+    skip: true
+    label: "IndicTrans2 (32k)"
+    family: indic-sentencepiece
+    note: >-
+      Requires the external IndicTransToolkit for its custom pre-tokenizer;
+      enable once that dependency is pinned.
+
+  - key: llama3
+    spec: hf:meta-llama/Meta-Llama-3-8B
+    skip: true
+    label: "Llama-3 (128k)"
+    family: byte-bpe
+    note: "Gated repo; needs an authenticated HF token."
